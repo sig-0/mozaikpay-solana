@@ -1,0 +1,17 @@
+{
+  "reasons": {
+    "Init If Needed Reinitialization": "The vault is an associated token account owned by the token program. When it exists, Anchor checks its mint, authority and address and does not reinitialize it, and forward closes it at the end",
+    "Unconstrained UncheckedAccount": "forward never reads these accounts. It passes them to Circle's deposit_for_burn, whose program id is fixed, and Circle checks each one by seeds, by account type or by destination domain"
+  },
+  "fingerprints": [
+    "Init If Needed Reinitialization::programs/mozaik-cctp-forwarder/src/lib.rs:166:9-23",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:177:27-43",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:180:27-43",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:184:30-46",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:187:26-42",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:190:33-49",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:193:23-39",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:197:22-38",
+    "Unconstrained UncheckedAccount::programs/mozaik-cctp-forwarder/src/lib.rs:203:26-42"
+  ]
+}
