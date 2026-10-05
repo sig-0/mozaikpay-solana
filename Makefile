@@ -162,15 +162,21 @@ deploy-mainnet: check-deploy
 		--keypair $(DEPLOYER_KEYPAIR) --url $(SOLANA_MAINNET_RPC) $(DEPLOY_FLAGS)
 
 # Uploads the build parameters of PROGRAM_BUILD_COMMIT for the deployed program, signed by the upgrade authority,
-# without a local build. Runs before finalize
+# without a local build. solana-verify loads the Solana CLI config and its keypair even when --keypair is set, so it
+# gets a throwaway config that points at the deployer
+verify-from-repo = dir="$$(mktemp -d)"; trap 'rm -rf "$$dir"' EXIT; \
+	solana config set --config "$$dir/config.yml" --keypair $(DEPLOYER_KEYPAIR) --url $(1) >/dev/null; \
+	solana-verify verify-from-repo $(REPO_URL) --program-id $(PROGRAM_ID) --commit-hash $(PROGRAM_BUILD_COMMIT) \
+		--library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) \
+		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION) --skip-build \
+		--config "$$dir/config.yml" --keypair $(DEPLOYER_KEYPAIR) --url $(1)
+
+# Runs before finalize
 .PHONY: verify-devnet
 verify-devnet:
 	@$(require-deployer)
 	@$(require-commit)
-	solana-verify verify-from-repo $(REPO_URL) --program-id $(PROGRAM_ID) --commit-hash $(PROGRAM_BUILD_COMMIT) \
-		--library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) \
-		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION) --skip-build \
-		--keypair $(DEPLOYER_KEYPAIR) --url $(SOLANA_DEVNET_RPC)
+	$(call verify-from-repo,$(SOLANA_DEVNET_RPC))
 
 # The same as verify-devnet, then asks OtterSec's remote verifier to rebuild the program from PROGRAM_BUILD_COMMIT
 # and compare it with the program on mainnet
@@ -178,12 +184,36 @@ verify-devnet:
 verify-mainnet:
 	@$(require-deployer)
 	@$(require-commit)
-	solana-verify verify-from-repo $(REPO_URL) --program-id $(PROGRAM_ID) --commit-hash $(PROGRAM_BUILD_COMMIT) \
-		--library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) \
-		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION) --skip-build \
-		--keypair $(DEPLOYER_KEYPAIR) --url $(SOLANA_MAINNET_RPC)
+	$(call verify-from-repo,$(SOLANA_MAINNET_RPC))
 	solana-verify remote submit-job --program-id $(PROGRAM_ID) \
 		--uploader "$$(solana-keygen pubkey $(DEPLOYER_KEYPAIR))" --url $(SOLANA_MAINNET_RPC)
+
+# The name, logo and contacts that explorers show for the program. They go into a metadata account of Solana's Program
+# Metadata Program, not into the program, whose security.txt format has no logo field. Only the upgrade authority can
+# create the account, so it is written before finalize, and finalize refuses to run without it
+METADATA_JSON := metadata/security.json
+METADATA_LOGO := metadata/logo.png
+METADATA_LOGO_URL := https://raw.githubusercontent.com/sig-0/mozaikpay-solana/main/$(METADATA_LOGO)
+METADATA_CLI := npx --yes @solana-program/program-metadata@0.10.0
+
+# Writes METADATA_JSON once it links METADATA_LOGO_URL and that URL serves METADATA_LOGO
+write-metadata = test -f $(METADATA_LOGO) || { echo "$(METADATA_LOGO) is missing" >&2; exit 1; }; \
+	grep -qF $(METADATA_LOGO_URL) $(METADATA_JSON) || { echo "$(METADATA_JSON) does not link $(METADATA_LOGO_URL)" >&2; exit 1; }; \
+	curl -fsSL $(METADATA_LOGO_URL) | cmp -s - $(METADATA_LOGO) || { echo "$(METADATA_LOGO_URL) does not serve $(METADATA_LOGO)" >&2; exit 1; }; \
+	$(METADATA_CLI) --keypair $(DEPLOYER_KEYPAIR) --rpc $(1) write security $(PROGRAM_ID) $(METADATA_JSON) --format json
+
+require-metadata = $(METADATA_CLI) --rpc $(1) fetch security $(PROGRAM_ID) >/dev/null || \
+	{ echo "The program has no metadata on $(1). Run make metadata-devnet or make metadata-mainnet first" >&2; exit 1; }
+
+.PHONY: metadata-devnet
+metadata-devnet:
+	@$(require-deployer)
+	$(call write-metadata,$(SOLANA_DEVNET_RPC))
+
+.PHONY: metadata-mainnet
+metadata-mainnet:
+	@$(require-deployer)
+	$(call write-metadata,$(SOLANA_MAINNET_RPC))
 
 # solana program show needs a signer even though it only reads, so it gets a throwaway one
 show-program = key="$$(mktemp)"; trap 'rm -f "$$key"' EXIT; \
@@ -204,6 +234,7 @@ show-mainnet:
 finalize-devnet:
 	@$(require-deployer)
 	@$(require-hash)
+	@$(call require-metadata,$(SOLANA_DEVNET_RPC))
 	test "$$(shasum -a 256 $(DEPLOY_SO) | cut -d ' ' -f 1)" = $(PROGRAM_BUILD_SHA)
 	scripts/check-deployed.sh $(SOLANA_DEVNET_RPC) $(PROGRAM_ID) $(DEPLOY_SO)
 	solana program set-upgrade-authority $(PROGRAM_ID) --final \
@@ -213,6 +244,7 @@ finalize-devnet:
 finalize-mainnet:
 	@$(require-deployer)
 	@$(require-hash)
+	@$(call require-metadata,$(SOLANA_MAINNET_RPC))
 	test "$$(shasum -a 256 $(DEPLOY_SO) | cut -d ' ' -f 1)" = $(PROGRAM_BUILD_SHA)
 	scripts/check-deployed.sh $(SOLANA_MAINNET_RPC) $(PROGRAM_ID) $(DEPLOY_SO)
 	solana program set-upgrade-authority $(PROGRAM_ID) --final \

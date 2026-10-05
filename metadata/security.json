@@ -1,0 +1,10 @@
+{
+  "name": "MozaikPay CCTP Forwarder",
+  "logo": "https://raw.githubusercontent.com/sig-0/mozaikpay-solana/main/metadata/logo.png",
+  "description": "Forwards USDC from per-account Solana deposit addresses to MozaikPay accounts on Base through Circle CCTP V2",
+  "project_url": "https://github.com/sig-0/mozaikpay-solana",
+  "contacts": ["link:https://github.com/sig-0/mozaikpay-solana/security/advisories/new"],
+  "policy": "https://github.com/sig-0/mozaikpay-solana/blob/main/SECURITY.md",
+  "preferred_languages": ["en"],
+  "source_code": "https://github.com/sig-0/mozaikpay-solana"
+}
