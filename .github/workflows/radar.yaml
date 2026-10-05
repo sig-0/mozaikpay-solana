@@ -22,7 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Radar publishes no releases, so the launcher and the images are pinned by commit and digest
+      # Radar publishes no releases, so the launcher and the images are pinned by commit and digest.
+      # The launcher also inspects the api image by its :main tag, which a pull by digest does not
+      # create, and exits silently when it is missing, so both files get the digests
       - name: Install Radar
         run: |
           radar="${XDG_CONFIG_HOME:-$HOME}/.radar"
@@ -31,7 +33,7 @@ jobs:
           sed -i \
             -e "s|ghcr.io/auditware/radar-api:main|${RADAR_API_IMAGE}|" \
             -e "s|ghcr.io/auditware/radar-controller:main|${RADAR_CONTROLLER_IMAGE}|" \
-            "$radar/docker-compose.yml"
+            "$radar/docker-compose.yml" "$radar/radar"
 
       # Fails on high and critical findings
       - name: Run Radar
