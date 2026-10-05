@@ -1,0 +1,35 @@
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+    { id = "RUSTSEC-2025-0141", reason = "bincode is unmaintained, no known vulnerability. anchor-lang and the Agave crates depend on it" },
+    { id = "RUSTSEC-2021-0139", reason = "ansi_term is unmaintained, no known vulnerability. Only the LiteSVM tests use it" },
+    { id = "RUSTSEC-2024-0388", reason = "derivative is unmaintained, no known vulnerability. Only the LiteSVM tests use it, through arkworks" },
+    { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained, no known vulnerability. Only the LiteSVM tests use it, through arkworks" },
+    { id = "RUSTSEC-2025-0161", reason = "libsecp256k1 is unmaintained, no known vulnerability. Only the LiteSVM tests use it, through the Agave syscalls" },
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "MIT",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

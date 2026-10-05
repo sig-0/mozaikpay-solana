@@ -1,0 +1,41 @@
+[package]
+name = "mozaik-cctp-forwarder"
+version = "0.1.0"
+description = "Forwards USDC from per-account Solana deposit addresses to MozaikPay accounts on Base through Circle CCTP V2"
+license = "Apache-2.0"
+repository = "https://github.com/sig-0/mozaikpay-solana"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mozaik_cctp_forwarder"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "anchor-spl/token_2022"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "=1.2.0", features = ["init-if-needed"] }
+anchor-spl = { version = "=1.2.0", default-features = false, features = ["token", "associated_token"] }
+solana-security-txt = "1.1.1"
+
+[dev-dependencies]
+agave-feature-set = "4.3.0"
+base64 = "0.22.1"
+litesvm = "0.17.0"
+serde_json = "1.0.145"
+solana-account = "4.3.0"
+solana-message = "4.2.4"
+solana-transaction = "4.1.5"
+solana-signer = "3.0.1"
+solana-keypair = "3.1.2"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

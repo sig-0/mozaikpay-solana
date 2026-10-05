@@ -1,0 +1,24 @@
+[toolchain]
+anchor_version = "1.2.0"
+solana_version = "4.1.2"
+package_manager = "yarn"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+mozaik_cctp_forwarder = "MzkicG4ev5reLESn2RZvPVufghwgwQhRqvhNqVr8oNb"
+
+[programs.devnet]
+mozaik_cctp_forwarder = "MzkicG4ev5reLESn2RZvPVufghwgwQhRqvhNqVr8oNb"
+
+[programs.mainnet]
+mozaik_cctp_forwarder = "MzkicG4ev5reLESn2RZvPVufghwgwQhRqvhNqVr8oNb"
+
+[provider]
+cluster = "localnet"
+wallet = ""
+
+[scripts]
+test = "cargo test"

@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SOLANA_VERSION: 4.1.2
+  SOLANA_VERIFY_VERSION: 0.5.2
+  SOLANA_VERIFY_SHA256: b9d5ccce9634dc14269cab3e7a58649bc141b3306e7735a94478c936341f211f
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: solana-verify build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install solana-verify
+        run: |
+          curl -sSfL -o solana-verify \
+            "https://github.com/Ellipsis-Labs/solana-verifiable-build/releases/download/v${SOLANA_VERIFY_VERSION}/solana-verify-${SOLANA_VERIFY_VERSION}-linux"
+          echo "${SOLANA_VERIFY_SHA256}  solana-verify" | sha256sum --check
+          sudo install solana-verify /usr/local/bin/solana-verify
+
+      # The deploy artifact: the program built in Solana's verifiable-build Docker image
+      # The build container runs as root, so its files in target/ go back to the runner user
+      - name: Build the deploy artifact
+        run: |
+          make verifiable-build
+          sudo chown -R "$(id -u):$(id -g)" target
+
+      - name: Run tests on the deploy artifact
+        run: cargo test --locked
+
+      - name: Print the artifact hash
+        run: sha256sum target/verifiable/mozaik_cctp_forwarder.so | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mozaik_cctp_forwarder
+          path: target/verifiable/mozaik_cctp_forwarder.so
+          if-no-files-found: error

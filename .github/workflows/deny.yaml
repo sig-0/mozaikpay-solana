@@ -1,0 +1,26 @@
+name: Deny
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.20.2
+
+      # Fails on advisories, licenses, bans and sources. deny.toml lists the accepted advisories
+      - name: Run cargo-deny
+        run: make deny

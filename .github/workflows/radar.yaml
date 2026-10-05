@@ -1,0 +1,46 @@
+name: Radar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  RADAR_COMMIT: 3439053d8da6339606ec6aee604cf2e1855e43e0
+  RADAR_API_IMAGE: ghcr.io/auditware/radar-api@sha256:7f8397ff1d0175bd7a943056ea2d34a452cf22dc010e3cd7a178cc7f8e563344
+  RADAR_CONTROLLER_IMAGE: ghcr.io/auditware/radar-controller@sha256:3d0d7ef4ec2566760de9c1c415ee917f8599ca3d1d5cfcd4ca0dd7100037d194
+
+permissions:
+  contents: read
+
+jobs:
+  radar:
+    name: radar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Radar publishes no releases, so the launcher and the images are pinned by commit and digest
+      - name: Install Radar
+        run: |
+          radar="${XDG_CONFIG_HOME:-$HOME}/.radar"
+          git clone --quiet https://github.com/auditware/radar.git "$radar"
+          git -C "$radar" checkout --quiet "$RADAR_COMMIT"
+          sed -i \
+            -e "s|ghcr.io/auditware/radar-api:main|${RADAR_API_IMAGE}|" \
+            -e "s|ghcr.io/auditware/radar-controller:main|${RADAR_CONTROLLER_IMAGE}|" \
+            "$radar/docker-compose.yml"
+
+      # Fails on high and critical findings
+      - name: Run Radar
+        run: '"${XDG_CONFIG_HOME:-$HOME}/.radar/radar" -p . -s programs --fail-on high -o radar.sarif'
+
+      - name: Upload the Radar report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: radar
+          path: radar.sarif
+          if-no-files-found: warn

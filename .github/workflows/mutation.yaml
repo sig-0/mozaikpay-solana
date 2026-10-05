@@ -1,0 +1,43 @@
+name: Mutation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SOLANA_VERSION: 4.1.2
+
+permissions:
+  contents: read
+
+jobs:
+  mutate:
+    name: cargo-mutants
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants@27.1.0
+
+      # Fails if a mutant survives the tests
+      - name: Run cargo-mutants
+        run: make mutate
+
+      - name: Upload the mutation report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants
+          path: mutants.out
+          if-no-files-found: warn

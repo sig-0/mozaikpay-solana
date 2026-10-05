@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+if [ "$1" = "test" ]; then
+	env -u CARGO cargo build-sbf --arch v3 --tools-version v1.54 \
+		--manifest-path programs/mozaik-cctp-forwarder/Cargo.toml
+fi
+
+exec cargo "$@"

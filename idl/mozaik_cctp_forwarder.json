@@ -1,0 +1,279 @@
+{
+  "address": "MzkicG4ev5reLESn2RZvPVufghwgwQhRqvhNqVr8oNb",
+  "metadata": {
+    "name": "mozaik_cctp_forwarder",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Forwards USDC from per-account Solana deposit addresses to MozaikPay accounts on Base through Circle CCTP V2",
+    "repository": "https://github.com/sig-0/mozaikpay-solana"
+  },
+  "instructions": [
+    {
+      "name": "forward",
+      "docs": [
+        "Moves up to `amount` USDC from a token account that delegates to the forwarder of",
+        "`account`, then burns the whole vault balance through CCTP V2 with `account` on Base as",
+        "the mint recipient. Lowers `max_fee` to 20 bps of the burned amount when it is above that.",
+        "Anyone can call it."
+      ],
+      "discriminator": [
+        45,
+        165,
+        201,
+        116,
+        206,
+        225,
+        241,
+        18
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "forwarder",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  111,
+                  114,
+                  119,
+                  97,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "forwarder"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "sender_authority"
+        },
+        {
+          "name": "denylist_account"
+        },
+        {
+          "name": "message_transmitter",
+          "writable": true
+        },
+        {
+          "name": "token_messenger"
+        },
+        {
+          "name": "remote_token_messenger"
+        },
+        {
+          "name": "token_minter"
+        },
+        {
+          "name": "local_token",
+          "writable": true
+        },
+        {
+          "name": "message_sent_event_data",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event_authority"
+        },
+        {
+          "name": "message_transmitter_program",
+          "address": "CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC"
+        },
+        {
+          "name": "token_messenger_minter_program",
+          "address": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "account",
+          "type": {
+            "array": [
+              "u8",
+              20
+            ]
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "max_fee",
+          "type": "u64"
+        },
+        {
+          "name": "min_finality_threshold",
+          "type": "u32"
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NothingToForward",
+      "msg": "The amount, the source balance or the delegated amount is zero"
+    },
+    {
+      "code": 6001,
+      "name": "NotDelegated",
+      "msg": "The source token account does not delegate to the forwarder"
+    },
+    {
+      "code": 6002,
+      "name": "UnsupportedFinalityThreshold",
+      "msg": "The minimum finality threshold is not 1000 or 2000"
+    }
+  ],
+  "constants": [
+    {
+      "name": "BASE_DOMAIN",
+      "type": "u32",
+      "value": "6"
+    },
+    {
+      "name": "FAST_FINALITY_THRESHOLD",
+      "type": "u32",
+      "value": "1000"
+    },
+    {
+      "name": "FORWARDER_SEED",
+      "type": "bytes",
+      "value": "[102, 111, 114, 119, 97, 114, 100, 101, 114]"
+    },
+    {
+      "name": "MAX_FEE_BPS",
+      "type": "u64",
+      "value": "20"
+    },
+    {
+      "name": "STANDARD_FINALITY_THRESHOLD",
+      "type": "u32",
+      "value": "2000"
+    }
+  ]
+}

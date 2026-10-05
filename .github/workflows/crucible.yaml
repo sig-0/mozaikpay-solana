@@ -1,0 +1,65 @@
+name: Crucible
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SOLANA_VERSION: 4.1.2
+  CRUCIBLE_TAG: v0.3.0-alpha.1
+  CRUCIBLE_COMMIT: 086b423506bf4928a878f292e34c7beed9c7056d
+
+permissions:
+  contents: read
+
+jobs:
+  crucible:
+    name: crucible
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Crucible
+        id: crucible
+        uses: actions/cache@v6
+        with:
+          path: ~/.cargo/bin/crucible
+          key: crucible-${{ runner.os }}-${{ env.CRUCIBLE_TAG }}-${{ env.CRUCIBLE_COMMIT }}
+
+      # cargo install --git fails at this tag (nested example workspace), so install from a clone
+      - name: Install Crucible
+        if: steps.crucible.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$CRUCIBLE_TAG" https://github.com/asymmetric-research/crucible "$RUNNER_TEMP/crucible"
+          test "$(git -C "$RUNNER_TEMP/crucible" rev-parse HEAD)" = "$CRUCIBLE_COMMIT"
+          cargo install --locked --path "$RUNNER_TEMP/crucible/crates/crucible-fuzz-cli"
+
+      - name: Cache the harness build
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            fuzz/mozaik_cctp_forwarder/target
+          key: fuzz-${{ runner.os }}-${{ hashFiles('fuzz/mozaik_cctp_forwarder/Cargo.lock') }}
+
+      # Five minutes per cluster; fails on any invariant violation or harness panic
+      - name: Fuzz the mainnet and devnet fixtures
+        run: make crucible CRUCIBLE_SECONDS=300
+
+      - name: Upload crashes
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crucible-crashes
+          path: fuzz/mozaik_cctp_forwarder/crashes
+          if-no-files-found: ignore

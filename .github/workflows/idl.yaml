@@ -1,0 +1,39 @@
+name: IDL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SOLANA_VERSION: 4.1.2
+  ANCHOR_VERSION: 1.2.0
+  ANCHOR_SHA256: 0c9c41a3292c281cc6eadb78d6e1c8224d8324a34b0736a89d640fd314db05b7
+
+permissions:
+  contents: read
+
+jobs:
+  idl:
+    name: idl drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI
+        run: |
+          curl -sSfL -o anchor \
+            "https://github.com/solana-foundation/anchor/releases/download/v${ANCHOR_VERSION}/anchor-${ANCHOR_VERSION}-x86_64-unknown-linux-gnu"
+          echo "${ANCHOR_SHA256}  anchor" | sha256sum --check
+          sudo install anchor /usr/local/bin/anchor
+
+      # Fails if idl/ differs from the IDL of a fresh build. Run `make idl` and commit the result
+      - name: Check the IDL
+        run: make idl-check

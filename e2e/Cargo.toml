@@ -1,0 +1,23 @@
+[package]
+name = "mozaik-cctp-forwarder-e2e"
+version = "0.1.0"
+description = "End-to-end tests of the forwarder on a local validator that mirrors devnet or mainnet"
+license = "Apache-2.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+anchor-lang = "=1.2.0"
+anchor-spl = { version = "=1.2.0", default-features = false, features = ["token", "associated_token"] }
+base64 = "0.22.1"
+serde_json = "1.0.145"
+
+[dev-dependencies]
+mozaik-cctp-forwarder = { path = "../programs/mozaik-cctp-forwarder", features = ["no-entrypoint"] }
+solana-commitment-config = "3.1.1"
+solana-keypair = "3.1.2"
+solana-rpc-client = { version = "4.3.0", default-features = false }
+solana-signer = "3.0.1"
+solana-transaction = "4.3.0"

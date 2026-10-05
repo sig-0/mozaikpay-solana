@@ -1,0 +1,17 @@
+# Anchor and Cargo build artifacts
+target/
+.anchor/
+**/*.rs.bk
+test-ledger/
+.surfpool/
+
+# Secrets
+.env
+*-keypair.json
+
+# Editor leftovers
+.idea
+.vscode
+.DS_Store
+*.log
+mutants.out*/
