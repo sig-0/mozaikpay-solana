@@ -19,6 +19,10 @@ REPO_URL := https://github.com/sig-0/mozaikpay-solana
 SBPF_ARCH := v3
 TOOLS_VERSION := v1.54
 
+# Solana's verifiable-build image for Solana 4.1.2, the one solana-verify 0.5.2 picks. Builds and
+# verifications name it, because OtterSec's remote verifier has no image for 4.1.2 of its own
+VERIFY_IMAGE := solanafoundation/solana-verifiable-build@sha256:2e0b78f44ee76612e9260c7c988570c5e14de6fbd93e0ab07115ec7054473b4f
+
 # Builds the program and its IDL with the Anchor CLI. The program keypair stays outside the repo, so
 # the key check is skipped. The tests pin the program id, and check-deploy checks PROGRAM_KEYPAIR
 .PHONY: build
@@ -41,7 +45,7 @@ build-sbf:
 verifiable-build:
 	rm -f $(PROGRAM_SO) $(DEPLOY_SO)
 	mkdir -p $(dir $(DEPLOY_SO))
-	solana-verify build --library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) \
+	solana-verify build --library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) --base-image $(VERIFY_IMAGE) \
 		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION)
 	cp $(PROGRAM_SO) $(DEPLOY_SO)
 
@@ -168,7 +172,7 @@ verify-from-repo = dir="$$(mktemp -d)"; trap 'rm -rf "$$dir"' EXIT; \
 	solana config set --config "$$dir/config.yml" --keypair $(DEPLOYER_KEYPAIR) --url $(1) >/dev/null; \
 	solana-verify verify-from-repo $(REPO_URL) --program-id $(PROGRAM_ID) --commit-hash $(PROGRAM_BUILD_COMMIT) \
 		--library-name mozaik_cctp_forwarder --arch $(SBPF_ARCH) \
-		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION) --skip-build \
+		--cargo-build-sbf-args=--tools-version=$(TOOLS_VERSION) --base-image $(VERIFY_IMAGE) --skip-build \
 		--config "$$dir/config.yml" --keypair $(DEPLOYER_KEYPAIR) --url $(1)
 
 # Runs before finalize
